@@ -4,7 +4,7 @@
   "description": "Minecraft Server Status Dashboard",
   "scripts": {
     "dev": "wrangler pages dev public --compatibility-date=2024-09-23",
-    "deploy": "wrangler pages deploy public",
+    "deploy": "wrangler pages deploy public --branch production",
     "preview": "wrangler pages dev ."
   },
   "devDependencies": {
