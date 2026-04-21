@@ -22,9 +22,6 @@ const retryBtn       = document.getElementById('retry-btn');
 const resultsSection = document.getElementById('results-section');
 const editionToggle  = document.querySelector('.edition-toggle');
 
-// DOM Refs for Stats
-const protocolVal = document.getElementById('protocol-value');
-
 // Grid items for animation
 const statsCards = [
   document.getElementById('stat-players'),
@@ -241,8 +238,8 @@ function renderResults(data, { host, port, edition }) {
     const p = data.protocol;
     protoStr = `Protocol: ${typeof p === 'object' ? (p.version ?? JSON.stringify(p)) : p}`;
   }
-  document.getElementById('version-value').textContent   = ver;
-  document.getElementById('protocol-value').textContent  = protoStr;
+  document.getElementById('version-value').textContent  = ver;
+  document.getElementById('protocol-value').textContent = protoStr;
 
 
   /* ── Players list ── */
