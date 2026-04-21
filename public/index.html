@@ -1,0 +1,282 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>MC Status — Minecraft Server Status Checker</title>
+  <meta name="description"
+    content="Check any Minecraft Java or Bedrock server status in real-time. View player count, ping, MOTD, version, and full debug info." />
+  <meta name="google-site-verification" content="lVHp_bdVoe-XT-j6BIDXhpwElQBesEa0TYqC7CSb9gw" />
+  <meta name="keywords" content="minecraft, server status, java, bedrock, MOTD, ping, player count" />
+  <link rel="canonical" href="https://mc-status.ddns.codes/" />
+
+  <meta property="og:title" content="MC Status — Minecraft Server Status Checker" />
+  <meta property="og:description" content="Real-time Minecraft server status dashboard" />
+  <meta property="og:url" content="https://mc-status.ddns.codes/" />
+  <meta property="og:type" content="website" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link
+    href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&family=JetBrains+Mono:wght@400;500;600&display=swap"
+    rel="stylesheet" />
+  <link rel="stylesheet" href="style.css" />
+</head>
+
+<body>
+  <!-- Background particles canvas -->
+  <canvas id="bg-canvas"></canvas>
+
+  <!-- ─── Navigation ─── -->
+  <nav class="navbar">
+    <div class="nav-inner">
+      <a href="#" class="nav-brand">
+        <span class="nav-icon">⛏️</span>
+        <span class="nav-title">MC<span class="accent">Status</span></span>
+      </a>
+      <div class="nav-links">
+        <a href="#checker" class="nav-link">Checker</a>
+        <a href="#how-it-works" class="nav-link">How it Works</a>
+        <span class="nav-badge">Free &amp; Open</span>
+      </div>
+    </div>
+  </nav>
+
+  <!-- ─── Hero ─── -->
+  <header class="hero" id="hero">
+    <div class="hero-inner">
+      <div class="hero-badge">
+        <span class="badge-dot"></span>
+        Realtime Server Checker
+      </div>
+      <h1 class="hero-title">
+        Check Your <span class="gradient-text">Minecraft</span><br />
+        Server Status
+      </h1>
+      <p class="hero-subtitle">
+        Instantly check any Java or Bedrock server — players online, ping, MOTD, version, and full debug info.
+      </p>
+    </div>
+  </header>
+
+  <!-- ─── Checker Card ─── -->
+  <section class="checker-section" id="checker">
+    <div class="checker-card glass">
+      <div class="card-header">
+        <h2 class="card-title">Server Checker</h2>
+        <p class="card-subtitle">Enter the server address and select edition</p>
+      </div>
+
+      <!-- Edition Toggle -->
+      <div class="edition-toggle" role="group" aria-label="Minecraft Edition">
+        <button id="btn-java" class="edition-btn active" data-edition="java" aria-pressed="true">
+          <span class="edition-icon">☕</span>
+          Java Edition
+        </button>
+        <button id="btn-bedrock" class="edition-btn" data-edition="bedrock" aria-pressed="false">
+          <span class="edition-icon">💎</span>
+          Bedrock Edition
+        </button>
+        <div class="toggle-slider" id="toggle-slider"></div>
+      </div>
+
+      <!-- Input Form -->
+      <form id="status-form" class="input-form" autocomplete="off">
+        <div class="input-group">
+          <label class="input-label" for="server-input">
+            Server Address
+            <span class="input-hint" id="input-hint">e.g. mc.hypixel.net or play.example.com:25565</span>
+          </label>
+          <div class="input-wrapper">
+            <span class="input-icon">🌐</span>
+            <input id="server-input" class="server-input" type="text" placeholder="play.example.com:25565"
+              autocomplete="off" spellcheck="false" aria-label="Minecraft server address" />
+            <button type="submit" class="check-btn" id="check-btn" aria-label="Check server status">
+              <span class="btn-text">Check</span>
+              <span class="btn-icon">→</span>
+              <div class="btn-ripple"></div>
+            </button>
+          </div>
+          <div class="quick-servers">
+            <span class="quick-label">Try:</span>
+            <button type="button" class="quick-btn" data-host="mc.hypixel.net" data-edition="java">Hypixel</button>
+            <button type="button" class="quick-btn" data-host="play.cubecraft.net"
+              data-edition="java">CubeCraft</button>
+          </div>
+        </div>
+      </form>
+    </div>
+  </section>
+
+  <!-- ─── Loading State ─── -->
+  <section class="loading-section" id="loading-section" hidden>
+    <div class="loading-card glass">
+      <div class="loader-ring">
+        <div class="ring-segment"></div>
+        <div class="ring-segment"></div>
+        <div class="ring-segment"></div>
+      </div>
+      <p class="loading-text">Pinging server…</p>
+      <p class="loading-host" id="loading-host"></p>
+    </div>
+  </section>
+
+  <!-- ─── Error State ─── -->
+  <section class="error-section" id="error-section" hidden>
+    <div class="error-card glass">
+      <div class="error-icon">⚠️</div>
+      <h3 class="error-title">Could not reach server</h3>
+      <p class="error-msg" id="error-msg">The server appears to be offline or unreachable.</p>
+      <button class="retry-btn" id="retry-btn">Try Again</button>
+    </div>
+  </section>
+
+  <!-- ─── Results Dashboard ─── -->
+  <section class="results-section" id="results-section" hidden>
+
+    <!-- Status Banner -->
+    <div class="status-banner" id="status-banner">
+      <div class="banner-left">
+        <div class="server-favicon-wrapper">
+          <img id="server-favicon" class="server-favicon" src="" alt="Server icon" />
+          <div class="favicon-placeholder" id="favicon-placeholder" aria-hidden="true">⛏️</div>
+        </div>
+        <div class="server-info-main">
+          <div class="server-name-row">
+            <h2 class="server-name" id="server-hostname">—</h2>
+            <div class="status-pill online" id="status-pill">
+              <span class="pill-dot"></span>
+              <span class="pill-text" id="status-text">Online</span>
+            </div>
+          </div>
+          <div class="server-edition-chip" id="edition-chip">Java Edition</div>
+        </div>
+      </div>
+      <div class="banner-actions">
+        <button class="icon-btn" id="copy-btn" title="Copy server address" aria-label="Copy server address">📋</button>
+        <button class="icon-btn" id="refresh-btn" title="Refresh status" aria-label="Refresh status">🔄</button>
+      </div>
+    </div>
+
+    <!-- MOTD Display -->
+    <div class="motd-card glass" id="motd-card">
+      <div class="motd-label">Message of the Day</div>
+      <div class="motd-content" id="motd-content">
+        <div class="motd-line" id="motd-line1"></div>
+        <div class="motd-line" id="motd-line2"></div>
+      </div>
+      <div class="motd-raw-toggle">
+        <button class="text-btn" id="motd-raw-btn">Show raw MOTD</button>
+        <code class="motd-raw" id="motd-raw" hidden></code>
+      </div>
+    </div>
+
+    <div class="stats-grid">
+      <div class="stat-card glass" id="stat-players">
+        <div class="stat-icon">👥</div>
+        <div class="stat-body">
+          <div class="stat-value" id="players-value">—</div>
+          <div class="stat-label">Players Online</div>
+          <div class="stat-bar-track">
+            <div class="stat-bar-fill" id="players-bar"></div>
+          </div>
+          <div class="stat-sublabel" id="players-sub">— / —</div>
+        </div>
+      </div>
+
+      <div class="stat-card glass" id="stat-ping">
+        <div class="stat-icon">📡</div>
+        <div class="stat-body">
+          <div class="stat-value" id="ping-value">—</div>
+          <div class="stat-label">Response Time</div>
+          <div class="ping-bars" id="ping-bars" aria-label="Signal strength">
+            <div class="ping-bar pb1"></div>
+            <div class="ping-bar pb2"></div>
+            <div class="ping-bar pb3"></div>
+            <div class="ping-bar pb4"></div>
+            <div class="ping-bar pb5"></div>
+          </div>
+        </div>
+      </div>
+
+      <div class="stat-card glass" id="stat-version">
+        <div class="stat-icon">📦</div>
+        <div class="stat-body">
+          <div class="stat-value version-value" id="version-value">—</div>
+          <div class="stat-label">Server Version</div>
+          <div class="stat-sublabel" id="protocol-value"></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Players List -->
+    <div class="detail-card glass" id="players-list-card">
+      <div class="detail-header">
+        <h3 class="detail-title">👥 Online Players</h3>
+        <span class="detail-count" id="players-list-count">0</span>
+      </div>
+      <div class="players-grid" id="players-grid">
+        <p class="empty-state">No player list available</p>
+      </div>
+    </div>
+
+    <!-- Debug Info -->
+    <div class="debug-card glass" id="debug-card">
+      <div class="debug-header">
+        <h3 class="debug-title">🔍 Debug Information</h3>
+        <button class="text-btn" id="debug-toggle-btn">Expand</button>
+      </div>
+      <div class="debug-body" id="debug-body" hidden>
+        <div class="debug-grid" id="debug-grid"></div>
+        <div class="raw-json-section">
+          <div class="raw-json-header">
+            <span>Raw API Response</span>
+            <button class="text-btn" id="copy-json-btn">Copy JSON</button>
+          </div>
+          <pre class="raw-json" id="raw-json"></pre>
+        </div>
+      </div>
+    </div>
+
+    <!-- Last checked -->
+    <div class="last-checked" id="last-checked"></div>
+
+  </section>
+
+  <!-- ─── How it works ─── -->
+  <section class="how-section" id="how-it-works">
+    <div class="how-inner">
+      <h2 class="section-title">How It Works</h2>
+      <div class="steps-grid">
+        <div class="step-card glass">
+          <div class="step-num">01</div>
+          <h3 class="step-title">Enter Address</h3>
+          <p class="step-desc">Type your server's IP or hostname. Include port if needed (e.g.
+            <code>play.server.com:19132</code>).</p>
+        </div>
+        <div class="step-card glass">
+          <div class="step-num">02</div>
+          <h3 class="step-title">Select Edition</h3>
+          <p class="step-desc">Choose Java (default port 25565) or Bedrock (default port 19132) edition.</p>
+        </div>
+        <div class="step-card glass">
+          <div class="step-num">03</div>
+          <h3 class="step-title">Get Results</h3>
+          <p class="step-desc">Our Cloudflare Worker pings the server and returns MOTD, players, ping, version, and
+            more.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ─── Footer ─── -->
+  <footer class="footer">
+    <p>Powered by <a href="https://mcsrvstat.us" target="_blank" rel="noopener">mcsrvstat.us</a> API &amp; Cloudflare
+      Workers</p>
+    <p class="footer-sub">MCStatus is not affiliated with Mojang Studios</p>
+  </footer>
+
+  <script src="app.js"></script>
+</body>
+
+</html>
