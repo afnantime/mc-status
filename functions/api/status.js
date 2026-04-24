@@ -42,9 +42,10 @@ export async function onRequestGet(context) {
   const tcpPort     = parseInt(port || defaultPort, 10);
   const target      = port ? `${host}:${port}` : host;
 
-  // ── Run TCP ping and API fetch IN PARALLEL ───────────────────────────────────
-  const [pingMs, apiResult] = await Promise.all([
+  // ── Run TCP ping, geo lookup, and API fetch ALL IN PARALLEL ─────────────────
+  const [pingMs, geoData, apiResult] = await Promise.all([
     tcpPing(host, tcpPort),
+    geoLookup(host),
     fetchStatus(target, type),
   ]);
 
@@ -60,6 +61,7 @@ export async function onRequestGet(context) {
     response_time_ms: elapsed,          // time for API to respond
     ping_ms:          pingMs,           // direct TCP ping: Cloudflare → MC server
     cf_colo:          context.request.cf?.colo || null,  // e.g. "SIN", "BKK", "LAX"
+    geo:              geoData,         // { country, country_code, city, isp, ... }
     api_source:       apiSource,
     edition:          type,
     queried_host:     host,
@@ -94,6 +96,30 @@ async function tcpPing(hostname, port) {
     return elapsed;
   } catch (_) {
     // If socket fails (server offline, UDP-only Bedrock, etc.) return null
+    return null;
+  }
+}
+
+// ── IP Geolocation: resolve server's country via ip-api.com ─────────────────
+// ip-api.com supports both IPs and hostnames, free & no key needed.
+async function geoLookup(hostname) {
+  try {
+    const res = await fetch(
+      `http://ip-api.com/json/${encodeURIComponent(hostname)}?fields=status,country,countryCode,regionName,city,isp,org`,
+      { headers: { "User-Agent": "MC-Status-Dashboard/2.0" } }
+    );
+    if (!res.ok) return null;
+    const json = await res.json();
+    if (json.status !== "success") return null;
+    return {
+      country:      json.country      || null,
+      country_code: json.countryCode  || null,
+      region:       json.regionName   || null,
+      city:         json.city         || null,
+      isp:          json.isp          || null,
+      org:          json.org          || null,
+    };
+  } catch (_) {
     return null;
   }
 }

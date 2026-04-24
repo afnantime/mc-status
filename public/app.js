@@ -26,7 +26,8 @@ const editionToggle  = document.querySelector('.edition-toggle');
 const statsCards = [
   document.getElementById('stat-players'),
   document.getElementById('stat-ping'),
-  document.getElementById('stat-version')
+  document.getElementById('stat-version'),
+  document.getElementById('stat-location')
 ];
 document.querySelectorAll('.edition-btn').forEach(btn => {
   btn.addEventListener('click', () => {
@@ -241,6 +242,8 @@ function renderResults(data, { host, port, edition }) {
   document.getElementById('version-value').textContent  = ver;
   document.getElementById('protocol-value').textContent = protoStr;
 
+  /* ── Location ── */
+  renderLocation(data._meta?.geo || null);
 
   /* ── Players list ── */
   renderPlayersList(data.players?.list || []);
@@ -377,6 +380,41 @@ function renderMotd(data) {
 }
 
 // ─────────────────────────────────────────────
+// Server Location
+// ─────────────────────────────────────────────
+function countryCodeToFlag(code) {
+  if (!code || code.length !== 2) return '🏳️';
+  return [...code.toUpperCase()].map(c =>
+    String.fromCodePoint(c.charCodeAt(0) + 127397)
+  ).join('');
+}
+
+function renderLocation(geo) {
+  const flagEl = document.getElementById('location-flag');
+  const subEl  = document.getElementById('location-sub');
+  
+  if (!flagEl || !subEl) return;
+
+  if (!geo || !geo.country) {
+    flagEl.textContent = '—';
+    subEl.textContent  = 'Unknown Location';
+    return;
+  }
+
+  const flag = countryCodeToFlag(geo.country_code);
+  flagEl.textContent = flag;
+  flagEl.title       = `${geo.country} (${geo.country_code})`;
+  
+  const parts = [];
+  if (geo.city) parts.push(geo.city);
+  if (geo.country) parts.push(geo.country);
+  
+  // if city and region are same, or just to be clean
+  const uniqueParts = [...new Set(parts)];
+  subEl.textContent = uniqueParts.join(', ');
+}
+
+// ─────────────────────────────────────────────
 // Ping bars
 // ─────────────────────────────────────────────
 function renderPing(ms, colo) {
@@ -480,6 +518,9 @@ function renderDebug(data, { host, port, edition }) {
     ['CF Edge',         data._meta?.cf_colo ? `${data._meta.cf_colo}` : '—', null],
     ['Ping (CF→Server)',data._meta?.ping_ms != null ? `${data._meta.ping_ms}ms` : '—', null],
     ['API Response',    data._meta?.response_time_ms != null ? `${data._meta.response_time_ms}ms` : '—', null],
+    ['Server Country',  data._meta?.geo?.country || '—', null],
+    ['Server City',     data._meta?.geo?.city    || '—', null],
+    ['Server ISP',      data._meta?.geo?.isp     || '—', null],
     ['Queried At',      data._meta?.queried_at ? new Date(data._meta.queried_at).toLocaleString() : '—', null],
     ['Version',         data.version || '—', null],
     ['Protocol',        data.protocol != null ? String(data.protocol) : '—', null],
